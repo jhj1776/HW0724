@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0724HW</title>
+    <style>
+        th,
+        td {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>단어 등록</h1>
+    <label>단어 : </label>
+    <input type="text" class="word">
+    <label>길이 : </label>
+    <input type="text" class="length">
+    <select id="selectbox">
+        <option value="" selected> 카테고리 ID </option>
+    </select>
+    <button onclick="insertWord();">등록</button>
+    <hr>
+    <table border="1px">
+        <thead>
+            <tr>
+                <th>번호</th>
+                <th>길이</th>
+                <th>단어</th>
+                <th>카테고리 번호</th>
+                <th>카테고리명</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <hr>
+    <h1>카테고리 등록</h1>
+    <hr>
+    <label>카테고리 명 : </label>
+    <input type="text" class="category">
+    <button onclick="insertcategory();">등록</button>
+</body>
+
+</html>
+
+<script>
+    window.addEventListener("DOMContentLoaded", insertSelectboxCategoryId);
+    function insertSelectboxCategoryId() {
+        fetch(`http://127.0.0.1:8080/api/word/getCategory`)
+            .then(resp => resp.json())
+            .then(voList => {
+                let str = "<option selected> 카테고리 ID </option>";
+                for (let vo of voList) {
+                    str += `
+            <option value="${vo.categoryId}"> ${vo.categoryName} </option>
+            `
+                }
+                document.querySelector("select").innerHTML = str;
+            })
+    }
+
+    function insertWord() {
+        const word = document.querySelector(".word").value;
+        const length = document.querySelector(".length").value;
+        const selectbox = document.querySelector("#selectbox").value;
+        let vo = { word, length, "categoryId": selectbox }
+        fetch("http://127.0.0.1:8080/api/word", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(vo)
+        })
+            .then(resp => resp.json())
+            .then(result => {
+                if (result != 1) {
+                    alert("등록 실패..")
+                } else {
+                    alert("등록 성공!")
+                }
+                selectWordList();
+            })
+    }
+
+    function selectWordList() {
+        let tbody = document.querySelector("tbody");
+        fetch("http://127.0.0.1:8080/api/word")
+            .then(resp => resp.json())
+            .then(voList => {
+                let str = "";
+                for (let vo of voList) {
+                    str += `
+                <tr onclick ="selectOneByNo(${vo.no});">
+                    <td>${vo.no}</td>
+                    <td>${vo.length}</td>
+                    <td>${vo.word}</td>
+                    <td>${vo.categoryId}</td>
+                    <td>${vo.categoryName}</td>
+                    </tr>
+                    `
+                }
+                tbody.innerHTML = str;
+            })
+    }
+    selectWordList();
+
+    function selectOneByNo(no) {
+        let tbody = document.querySelector("tbody");
+        fetch(`http://127.0.0.1:8080/api/word/${no}`)
+            .then(resp => resp.json())
+            .then(vo => {
+                let str = "";
+                str += `
+                <tr>
+                    <td>${vo.no}</td>
+                    <td>${vo.length}</td>
+                    <td>${vo.word}</td>
+                    <td>${vo.categoryId}</td>
+                    <td>${vo.categoryName}</td>
+                </tr>
+                <td></td>
+                <td><input class="UDlength" type="text" placeholder = "길이"></td>
+                <td><input class="UDword" type="text" placeholder = "단어"></td>
+                <td>
+                <button onclick="update(${vo.no})">수정</button>
+                <button onclick="del(${vo.no})">삭제</button>
+                <button onclick="selectWordList();">뒤로가기</button>
+                </td>
+            `;
+                tbody.innerHTML = str;
+
+            }
+            )
+    }
+    function update(no) {
+        const length = document.querySelector(".UDlength").value;
+        const word = document.querySelector(".UDword").value;
+        const vo = { no, length, word}
+        fetch("http://127.0.0.1:8080/api/word",{
+            method:"PUT",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify(vo)
+        })
+        .then(resp=>resp.json())
+        .then(result =>{
+                if(result!=1){
+                    alert("수정 실패..")
+                }else{
+                    alert("수정 성공!")
+                }
+                selectWordList();
+            })
+
+    }
+
+    function del(no) {
+        fetch(`http://127.0.0.1:8080/api/word/${no}`, {
+            method: "Delete"
+        })
+            .then(resp => resp.json())
+            .then(result =>{
+                if(result!=1){
+                    alert("삭제 실패..")
+                }else{
+                    alert("삭제 성공!")
+                }
+                selectWordList();
+            })
+    }
+
+
+function insertcategory(){
+    const category = document.querySelector(".category").value
+    fetch("http://127.0.0.1:8080/api/word/insertCategory",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({categoryName:category})
+    })
+    .then(resp => resp.json())
+            .then(result =>{
+                console.log(category);
+                
+                if(result!=1){
+                    alert("등록 실패..")
+                }else{
+                    alert("등록 성공!")
+                }
+                location.reload();
+            })
+};    
+</script>
